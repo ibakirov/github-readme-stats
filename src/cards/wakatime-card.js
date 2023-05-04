@@ -86,14 +86,15 @@ const createLanguageTextNode = ({ langs, totalSize, x, y }) => {
 /**
  * Create WakaTime text item.
  *
- * @param {Object[]} args The function arguments.
- * @param {string} id The id of the text node item.
- * @param {string} label The label of the text node item.
- * @param {string} value The value of the text node item.
- * @param {number} index The index of the text node item.
- * @param {percent} percent Percentage of the text node item.
- * @param {boolean} hideProgress Whether to hide the progress bar.
- * @param {string} progressBarBackgroundColor The color of the progress bar background.
+ * @param {Object} args The function arguments.
+ * @param {string} args.id The id of the text node item.
+ * @param {string} args.label The label of the text node item.
+ * @param {string} args.value The value of the text node item.
+ * @param {number} args.index The index of the text node item.
+ * @param {string} args.percent Percentage of the text node item.
+ * @param {boolean} args.hideProgress Whether to hide the progress bar.
+ * @param {string} args.progressBarColor The color of the progress bar.
+ * @param {string} args.progressBarBackgroundColor The color of the progress bar background.
  */
 const createTextNode = ({
   id,
@@ -118,6 +119,7 @@ const createTextNode = ({
         // @ts-ignore
         name: label,
         progressBarBackgroundColor,
+        delay: staggerDelay + 300,
       });
 
   return `
@@ -266,21 +268,30 @@ const renderWakatimeCard = (stats = {}, options = { hide: [] }) => {
       <rect x="25" y="0" width="${width - 50}" height="8" fill="white" rx="5" />
       </mask>
       ${compactProgressBar}
-      ${createLanguageTextNode({
-        x: 0,
-        y: 25,
-        langs: filteredLanguages,
-        totalSize: 100,
-      }).join("")}
+      ${
+        filteredLanguages.length
+          ? createLanguageTextNode({
+              x: 0,
+              y: 25,
+              langs: filteredLanguages,
+              totalSize: 100,
+            }).join("")
+          : noCodingActivityNode({
+              // @ts-ignore
+              color: textColor,
+              text: i18n.t("wakatimecard.nocodingactivity"),
+            })
+      }
     `;
   } else {
     finalLayout = flexLayout({
       items: filteredLanguages.length
-        ? filteredLanguages.map((language) => {
+        ? filteredLanguages.map((language, index) => {
             return createTextNode({
               id: language.name,
               label: language.name,
               value: language.text,
+              index: index,
               percent: language.percent,
               // @ts-ignore
               progressBarColor: titleColor,
@@ -321,7 +332,29 @@ const renderWakatimeCard = (stats = {}, options = { hide: [] }) => {
   card.setCSS(
     `
     ${cssStyles}
+    @keyframes slideInAnimation {
+      from {
+        width: 0;
+      }
+      to {
+        width: calc(100%-100px);
+      }
+    }
+    @keyframes growWidthAnimation {
+      from {
+        width: 0;
+      }
+      to {
+        width: 100%;
+      }
+    }
     .lang-name { font: 400 11px 'Segoe UI', Ubuntu, Sans-Serif; fill: ${textColor} }
+    #rect-mask rect{
+      animation: slideInAnimation 1s ease-in-out forwards;
+    }
+    .lang-progress{
+      animation: growWidthAnimation 0.6s ease-in-out forwards;
+    }
     `,
   );
 
